@@ -1,0 +1,41 @@
+.utf_carousel_item{
+  padding: 1%;
+}
+/* .gridimg{
+  width: 100%;
+} */
+abbr{
+  text-decoration: none;
+  border-bottom: none !important;
+}
+
+.utf_sticky_main_wrapper{
+  text-align: justify;
+}
+
+.highlightOption {
+  background-color: #ff2222;
+  color: white;
+}
+
+.listing_summary{
+  width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+}
+
+input[type = "radio"]{
+  accent-color: #ff2222;
+}
+
+#sticky_sidebar{
+  position: -webkit-sticky;
+  position: sticky;
+  top: 15%;
+}
+
+.pagination li{
+  cursor: pointer;
+}
