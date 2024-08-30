@@ -1,17 +1,36 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Footer = () => {
 
     const [leftCategory,setLeftCategory] = useState()
     const [righttCategory,setRightCategory] = useState()
 
+    const navigate = useNavigate()
+
+
+    function filterer(id){
+        const formData = {
+            "cities" : [],
+            "categories" : [id],
+            "listingTypes" : [],
+            "mos" : '-1',
+            "text" : '',
+            "sort_order" : '0'
+        }
+        if(window.location.pathname != '/listings/')
+        {
+            navigate('/listings/',{state:formData})
+        }
+    }
+
 
     useEffect(() => {
         axios.get(`${sessionStorage.getItem("urls")}/qikdial/category/`).then((response) => {
 
-            setLeftCategory(response.data.slice(0,Math.round(response.data.length/2)).map((data,index) => <li key={index}><a href="#">{data.name}</a></li>))
-            setRightCategory(response.data.slice(Math.round(response.data.length/2),).map((data,index) => <li key={index}><a href="#">{data.name}</a></li>))
+            setLeftCategory(response.data.slice(0,Math.round(response.data.length/2)).map((data,index) => <li key={index}><a className="sidebar_cats" onClick={() => filterer(data.id)}>{data.name}</a></li>))
+            setRightCategory(response.data.slice(Math.round(response.data.length/2),).map((data,index) => <li key={index}><a className="sidebar_cats" onClick={() => filterer(data.id)}>{data.name}</a></li>))
             
             console.log();
         })
@@ -28,7 +47,8 @@ const Footer = () => {
             <div className="col-md-2 col-sm-3 col-xs-6">
             <h4>Useful Links</h4>
             <ul className="social_footer_link">
-                <li><a href="#">About us</a></li>
+                <li><a href="/about">About us</a></li>
+                <li><a href="/contact">Contact us</a></li>
                 <li><a href="#">Free Listing</a></li>
                 <li><a href="#">Customer care</a></li>
                 <li><a href="#">Sitemap</a></li>

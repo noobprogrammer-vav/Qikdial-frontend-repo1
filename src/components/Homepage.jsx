@@ -8,6 +8,8 @@ import Header from "./Header";
 import { Rating } from "react-simple-star-rating";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import back_image from "../../public/images/city_search_background.jpg"
+import Cookies from 'js-cookie'
 
 import Typewriter from 'typewriter-effect';
 import Multiselect from "multiselect-react-dropdown";
@@ -36,6 +38,7 @@ const Homepage = () => {
     const [dropdown_categories,setDropdown_categories] = useState()
 
     const [dropdown_cities,setDropdown_cities] = useState([])
+    const [reloader,setReloader] = useState(true)
     
 
     
@@ -77,17 +80,17 @@ const Homepage = () => {
       };
 
 
-      function lover(list_id)
+      function  lover(list_id)
       {
           if(sessionStorage.getItem("token") == null){
             window.location.href = "/login"
             
           }
           else{
-              axios.post(`${sessionStorage.getItem("urls")}/qikdial/checker`,{token : sessionStorage.getItem("token")}).then((response) => {
+              axios.post(`${sessionStorage.getItem("urls")}/qikdial/checker`,{token : sessionStorage.getItem("token")}, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
                   if(!response.data.merchant)
                       {
-                          axios.post(`${sessionStorage.getItem("urls")}/qikdial/favorites/`,{"listing" : list_id, "token" : sessionStorage.getItem("token")}).then((response) => {
+                          axios.post(`${sessionStorage.getItem("urls")}/qikdial/favorites/`,{"listing" : list_id, "token" : sessionStorage.getItem("token")}, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
                               if(response.data.Message == "Deleted"){
                                   toast.error("Removed from favorites",{position:"bottom-left"})
                               }
@@ -112,24 +115,26 @@ const Homepage = () => {
             toast.success("Login Successful", {position:'top-center'})
         }
 
-        axios.get(`${sessionStorage.getItem("urls")}/qikdial/homepage`).then((response) => {
+        axios.get(`${sessionStorage.getItem("urls")}/qikdial/homepage`,{headers:{"Authorization" : sessionStorage.getItem("token")}}).then((response) => {
             setDropdown_cities(response.data.data.cities.map((data,index) => <option key={index} value={data[0]}>{data[1]}</option>))
             setCategories1(response.data.data.categories.map((data,index) => (<a onClick={() => filterer(null, 0, data.id)} key={index} className="utf_category_small_box_part"> <i><img src={`${sessionStorage.getItem("urls")}/${data.image}`} /></i><h4>{data.name}</h4><span>{data.total_listings}</span></a>)))
             setCategories(response.data.data.categories.map((data,index) => (<div onClick={() => filterer(null, 0, data.id)} key={index} className="col-md-3 col-sm-6 col-xs-12"> 
                 <a className="img-box" style={{backgroundImage : `url(${sessionStorage.getItem("urls")}/${data.image})`}}>
                     <div className="utf_img_content_box visible">
-                    <h4>{data.name} </h4>
+                        {data.name.split(" ").map((data,index) => <h4>{data}</h4>)}
+                        {/* <h4>{data.name}</h4> */}
+                     {/* need to change .replaceAll(" ",<br />)*/ }
                     <span>{data.total_listings} Listings</span> 
                     </div>
                 </a> 
             </div>)))
 
             setDropdown_categories(response.data.data.categories.map((data,index) => <option key={index} value={data.id}>{data.name}</option>))
-            setCategories2(response.data.data.categories.map((data,index) =>  <li onClick={() => filterer(null, 0, data.id)} key={index}> <a>
-            <div className="utf_box"> <i><img src={`${sessionStorage.getItem("urls")}/${data.image}`} height={"60%"} width={"40%"} /></i>
-                <p>{data.name}</p>
+            setCategories2(response.data.data.categories.map((data,index) =>  <li onClick={() => filterer(null, 0, data.id)} key={index}><abrr title={data.name}><a>
+            <div className="utf_box category_box"> <i><img src={`${sessionStorage.getItem("urls")}/${data.image}`} height={"60%"} width={"40%"} /></i>
+            <p>{data.name}</p>
             </div>
-            </a> 
+            </a></abrr> 
             </li>))
 
             var list_keys = Object.keys(response.data.data.listings)
@@ -150,7 +155,7 @@ const Homepage = () => {
                     <div className="utf_star_rating_section" data-rating={data.avg_rating}>
                     <Rating readonly initialValue={data.avg_rating} size={15} />
                         <span className="utf_view_count"><i className="fa fa-eye"></i> {data.views}</span>
-                        <span onClick={() => lover(data.id)} className="like-icon"></span>
+                        <span onClick={() => lover(data.id)} className={`like-icon ${data.is_fav ? 'liked' : ''}`}></span>
                     </div>
                 </div> 
             </div>)}</Slider>
@@ -173,7 +178,7 @@ const Homepage = () => {
                         <Rating readonly initialValue={data.avg_rating} size={15} />
                         <div className="utf_counter_star_rating">({data.avg_rating})</div>
                         <span className="utf_view_count"><i className="fa fa-eye"></i> {data.views}</span>
-                        <span onClick={() => lover(data.id)} className="like-icon"></span>
+                        <span onClick={() => lover(data.id)} className={`like-icon ${data.is_fav ? 'liked' : ''}`}></span>
                     </div>
                 </div> 
             </div>)}</Slider>
@@ -182,7 +187,7 @@ const Homepage = () => {
         })
 
         
-    },[])
+    },[reloader])
 
     function filterer(e, text, id=null)
     {
@@ -215,13 +220,25 @@ const Homepage = () => {
         <>
         <div id="main_wrapper">
             <Header head="home" />
-            <div className="search_container_block home_main_search_part main_search_block search_container_classic_block" data-background-image="./public/images/city_search_background.jpg">
+            <div className="search_container_block home_main_search_part main_search_block search_container_classic_block" data-background-image={back_image}>
                 <div className="main_inner_search_block">
                 <div className="container">
                     <div className="row">
                     <div className="col-md-12">
-                    <h2>Find & Explore Nearby <h2 style={{color:"red"}}><Typewriter  options={{autoStart:true, loop: true, delay:'150',  deleteSpeed:"100", pauseFor:"5000", strings:["Attractions", "Places", "Categories"]}} /></h2></h2>
-                        <h4>Find great places to stay, eat, shop, or visit the city</h4>
+                        <div style={{display:'flex', flexDirection:'row', gap:'10px', justifyContent:'center'}}>
+                            <h2>Find & Explore</h2> 
+                            <h2 style={{color:"#FF2222"}}>
+                                <Typewriter options={{
+                                    autoStart:true, 
+                                    loop: true, 
+                                    delay:'150',  
+                                    deleteSpeed:"natural", 
+                                    pauseFor:"3000", 
+                                    cursor:'!',
+                                    strings:["Great Services ", "Professional Businesses ", "New Products "]
+                                }} />
+                            </h2>
+                        </div>
                         <form onSubmit={(e) => filterer(e, 1, )} className="main_input_search_part">
                         <div className="main_input_search_part_item intro-search-field">
                             <input name="text" placeholder="What are you looking for?" />
@@ -280,7 +297,7 @@ const Homepage = () => {
             <div className="container padding-bottom-70">
                 <div className="row">
                 <div className="col-md-12">
-                    <h3 className="headline_part centered margin-bottom-35 margin-top-70">Most Popular Cities/Towns <span>Discover best things to do restaurants, shopping, hotels, cafes and places<br />around the world by categories.</span></h3>
+                    <h3 className="headline_part centered margin-bottom-35 margin-top-70">Most Popular Categories <span>Discover best services and businesses<br />all over India by categories.</span></h3>
                 </div>
                 {categories}
                 </div>
@@ -311,7 +328,7 @@ const Homepage = () => {
                                     <div className="contact-form-action">
                                         <form onSubmit={(e) => {
                                             e.preventDefault()
-                                            axios.post(`${sessionStorage.getItem("urls")}/qikdial/contacts`,{email : e.target.email.value }).then((response) => toast.success("Subscribed successfully",{position:"bottom-right"}))}} >
+                                            axios.post(`${sessionStorage.getItem("urls")}/qikdial/contacts`,{email : e.target.email.value }, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => toast.success("Subscribed successfully",{position:"bottom-right"}))}} >
                                             <span className="la la-envelope-o"></span>
                                             <input className="form-control" type="email" name="email" placeholder="Enter your email" required="" />
                                             <button className="utf_theme_btn" type="submit">Subscribe</button>

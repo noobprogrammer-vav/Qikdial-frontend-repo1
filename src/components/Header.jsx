@@ -1,10 +1,12 @@
 import React, { useEffect } from "react";
 import logo from '../../public/images/q_logo.jpg';
+import axios from "axios";
+import Cookies from 'js-cookie'
 
 const Header = (props) => {
 
     useEffect(() => {
-        sessionStorage.setItem("urls","http://127.0.0.1:8000") //https://qikdial.com http://127.0.0.1:8000
+        sessionStorage.setItem("urls","https://qikdial.com") //https://qikdial.com http://127.0.0.1:8000
         if(document.getElementById(props.head) != null){
             document.getElementById(props.head).classList.add('current')
         }
@@ -15,28 +17,39 @@ const Header = (props) => {
           sessionStorage.removeItem("call_login")
         }
 
+        if(sessionStorage.getItem("merchant") == "true"){
+          document.getElementById("the_header_dashboard").style.display = 'block'
+        }
+
     },[])
 
 
-    function handleLogin(e){
-      e.preventDefault()
-      const formData = {
-        email : e.target.email.value,
-        password : e.target.password.value
+    function logouter(){
+      if(sessionStorage.getItem("token") != null){
+        axios.post(`${sessionStorage.getItem("urls")}/qikdial/logout`,{token : sessionStorage.getItem("token")}, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
+          sessionStorage.removeItem("token")
+          sessionStorage.removeItem("merchant")
+
+          window.location.href = '/login'
+        })
       }
-      console.log('formData :>> ', formData);
+      else{
+        sessionStorage.removeItem("token")
+        sessionStorage.removeItem("merchant")
+        window.location.href = '/login'
+      }
     }
 
-    function handleRegistration(e){
-      e.preventDefault()
-      const formData = {
-        email : e.target.email.value,
-        password : e.target.password.value,
-        name : e.target.name.value,
-        phone : e.target.phone.value
+    function merchnt_nav()
+    {
+      if(sessionStorage.getItem("token") != null){
+        window.location.href = '/merchant/add_listings'          // need to be changer
       }
-      console.log('formData :>> ', formData);
+      else{
+        window.location.href = '/login/?nav=1'            // with data
+      }
     }
+
 
 
     return(
@@ -56,15 +69,16 @@ const Header = (props) => {
               <nav style={{float:"right"}} id="navigation" className="style_one">
                   <ul id="responsive">
                   <li><a id="benefits" href="#">Benefits</a></li>			  
-                  <li><a id="plan" href="#">Plan</a> </li>
+                  <li><a id="plan" href="/about">Plans</a> </li>
                   <li><a id="list" href="#">List Your Business</a></li>
-                  <li><a id="add" href="#">Post a Free Add</a></li>             
+                  <li><a id="add" onClick={merchnt_nav}>Post a Free AD</a></li>   
+                  <li style={{display:'none'}} id="the_header_dashboard"><a href="/merchant/dashboard" id="add">Dashboard</a></li>
                   </ul>
               </nav>
               <div className="clearfix"></div>
               </div>
               <div className="utf_right_side">
-              <div className="header_widget"> <a href="/login" id="logreg" className="button border sign-in x1"><i className="fa fa-sign-in"></i> Login / Register</a></div>
+              <div className="header_widget"> <a onClick={logouter} id="logreg" className="button border sign-in x1"><i className="fa fa-sign-in"></i> {sessionStorage.getItem("token") != null ? 'Logout' : 'Login / Register'}</a></div>
               </div>
           </div>
           </div>    

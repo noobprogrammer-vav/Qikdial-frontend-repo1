@@ -16,6 +16,8 @@ import Listing_detail from './components/Listing_detail';
 import All_listings from './components/All_listings';
 import Favorites from './components/Favorites';
 import Login from './components/Login';
+import Contactus from './components/Contactus';
+import About from './components/About';
 
 function App() {
 
@@ -31,8 +33,10 @@ function App() {
       <Route path='/' Component={Homepage} />
       <Route path='/listing' Component={Listing_detail} />
       <Route path='/listings' Component={All_listings} />
-      <Route path='/favorites' Component={Favorites} />
+      <Route path='/favourites' Component={Favorites} />
       <Route path='/login' Component={Login} />
+      <Route path='/contact' Component={Contactus} />
+      <Route path='/about' Component={About} />
 
     </Routes>
     </BrowserRouter>

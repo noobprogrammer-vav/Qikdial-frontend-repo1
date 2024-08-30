@@ -7,10 +7,14 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Rating } from 'react-simple-star-rating';
 
-import "react-responsive-carousel/lib/styles/carousel.min.css"; // requires a loader
-import { Carousel } from 'react-responsive-carousel';
+// import "react-responsive-carousel/lib/styles/carousel.min.css"; // requires a loader
+// import { Carousel } from 'react-responsive-carousel';
+
+import ImageGallery from "react-image-gallery";             //Good at everything
+import "react-image-gallery/styles/css/image-gallery.css";  //Good at everything
 
 import image_placeholder from '../../public/images/user_placeholder.jpg'
+import Cookies from 'js-cookie'
 
 
 // "./public/images/city_search_background.jpg"
@@ -18,6 +22,8 @@ const Listing_detail = () => {
 
     const [leftCard,setLeftCard] = useState()
     const [rightCard,setRightCard] = useState()
+    const [reloader,setReloader] = useState(true)
+    const navigate = useNavigate()
 
 
     function handleRating(rate)
@@ -41,11 +47,13 @@ const Listing_detail = () => {
         if(sessionStorage.getItem("token") == null){
             // navigate("/login",{state:["yes", "Login to add Ratings"]})
             document.getElementById("logreg").click()
+            // window.location.href = "/login"
         }
         else{
-            axios.post(`${sessionStorage.getItem("urls")}/qikdial/rating/`,formData).then((response) => {
+            axios.post(`${sessionStorage.getItem("urls")}/qikdial/rating/`,formData, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
                 toast.success("Thank you for the Response",{position:"bottom-left"})
                 document.getElementById("rstbtn").click()
+                setReloader(!reloader)
             }).catch((err) => {
                 console.log(err)
                 toast.error(err.response.data.Message,{position:"bottom-left"})
@@ -54,7 +62,29 @@ const Listing_detail = () => {
 
     }
 
+    function filterer(id){
+        const formData = {
+            "cities" : [],
+            "categories" : [id],
+            "listingTypes" : [],
+            "mos" : '-1',
+            "text" : '',
+            "sort_order" : '0'
+        }
+        navigate("/listings/",{state : formData})
+    }
 
+    function filterer_city(id){
+        const formData = {
+            "cities" : id != '' ? [id] : [],
+            "categories" : [],
+            "listingTypes" : [],
+            "mos" : '-1',
+            "text" : '',
+            "sort_order" : '0'
+        }
+        navigate("/listings/",{state : formData})
+    }
 
     function lover()
     {
@@ -63,14 +93,17 @@ const Listing_detail = () => {
             document.getElementById("logreg").click()
         }
         else{
-            axios.post(`${sessionStorage.getItem("urls")}/qikdial/checker`,{token : sessionStorage.getItem("token")}).then((response) => {
+            axios.post(`${sessionStorage.getItem("urls")}/qikdial/checker`,{token : sessionStorage.getItem("token")}, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
                 if(!response.data.merchant)
                     {
-                        axios.post(`${sessionStorage.getItem("urls")}/qikdial/favorites/`,{"listing" : new URL(window.location.href).searchParams.get('id'), "token" : sessionStorage.getItem("token")}).then((response) => {
+                        axios.post(`${sessionStorage.getItem("urls")}/qikdial/favorites/`,{"listing" : new URL(window.location.href).searchParams.get('id'), "token" : sessionStorage.getItem("token")}, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
                             if(response.data.Message == "Deleted"){
                                 toast.error("Removed from favorites",{position:"bottom-left"})
                             }
-                            else{toast.success("Added to favorites",{position:"bottom-left"})}
+                            else{
+                                toast.success("Added to favorites",{position:"bottom-left"})
+                                window.location.href = "/favourites"
+                            }
                             setReloader(!reloader)
                         }).catch((err) => console.log(err))
                     }
@@ -88,6 +121,10 @@ const Listing_detail = () => {
     function addenquiry(phone,list_name, e)
     {
         e.preventDefault()
+        if((parseInt(document.getElementById('left_num').innerText) + parseInt(document.getElementById("right_num").innerText)) != e.target.captcha.value){
+            toast.warning("Captcha is incorrect",{position:"bottom-left"})
+            return 0
+        }
         const formData = {
             "listing" : new URL(window.location.href).searchParams.get('id'),
             "token" : sessionStorage.getItem("token"),
@@ -103,11 +140,16 @@ const Listing_detail = () => {
         }
         else{
             window.open(`https://api.whatsapp.com/send/?phone=${phone}&text=Hi${" I want to discuss about "+list_name}&type=phone_number&app_absent=0`, "_blank")
-            axios.post(`${sessionStorage.getItem("urls")}/qikdial/enquiry/`, formData).then((response) => {
+            axios.post(`${sessionStorage.getItem("urls")}/qikdial/enquiry/`, formData, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
                 toast.success(response.data.Message,{position:"bottom-left"})
+                document.getElementById("rstbtn_contact").click()
             }).catch((err) => console.log(err))
         }
     }
+
+    useEffect(() => {
+        axios.post(`${sessionStorage.getItem("urls")}/qikdial/views`,{token : sessionStorage.getItem("token"), listing : new URL(window.location.href).searchParams.get('id') }, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }})
+    },[])
 
 
     useEffect(() => {
@@ -117,7 +159,7 @@ const Listing_detail = () => {
             window.history.go(-1)
         } 
         else{
-            axios.get(`${sessionStorage.getItem("urls")}/qikdial/listings/get/?id=${list_id}`).then((response) => {
+            axios.get(`${sessionStorage.getItem("urls")}/qikdial/listings/get/?id=${list_id}`,{headers : {"Authorization" : sessionStorage.getItem("token")}}).then((response) => {
                 var the_data = response.data.data
                 setLeftCard(
                     <div className="col-lg-8 col-md-8">
@@ -149,7 +191,7 @@ const Listing_detail = () => {
                         <div className="utf_counter_star_rating">({the_data.avg_rating.avg_rating != null ? the_data.avg_rating.avg_rating : 0}) / ({the_data.ratings.length} Reviews)</div>
                         </div>
                         <ul className="listing_item_social">
-                        <li onClick={lover}><a href="#"><i className="fa fa-bookmark"></i> Bookmark</a></li>
+                        <li onClick={lover}><a href="#"><i style={{color: the_data.is_fav ? 'red' : ''}} className="fa fa-heart"></i> Favourite</a></li>
                         <li><a href="#utf_add_review"><i className="fa fa-star"></i> Add Review</a></li>              
                         {/* <li><a href="#"><i className="fa fa-flag"></i> Featured</a></li> */}
                         <li onClick={() => navigator.clipboard.writeText(window.location.href).then(() => toast.success("Copied to clipboard",{position:"bottom-right"}))}><a href="#"><i className="fa fa-share"></i> Share</a></li>
@@ -164,16 +206,16 @@ const Listing_detail = () => {
                     <h3 className="utf_listing_headline_part margin-top-30 margin-bottom-30">Description</h3>
                     <p>{the_data.description}</p>
                     <div id="utf_listing_tags" className="utf_listing_section listing_tags_section margin-bottom-10 margin-top-0">          
-                        {the_data.mobile != undefined ? <a href={the_data.mobile}   ><i className="sl sl-icon-phone" aria-hidden="true"></i> {the_data.mobile}</a> : ''}
-                        {the_data.email != undefined ? <a href="#"><i className="fa fa-envelope-o" aria-hidden="true"></i> {the_data.email}</a>:""}
+                        {the_data.mobile != undefined ? <a><i className="sl sl-icon-phone" aria-hidden="true"></i> {the_data.mobile}</a> : ''}
+                        {the_data.email != undefined ? <a><i className="fa fa-envelope-o" aria-hidden="true"></i> {the_data.email}</a>:""}
                         {the_data.website != undefined ? <a href={the_data.website}><i className="sl sl-icon-globe" aria-hidden="true"></i> {the_data.website}</a> : ""}		
                     </div>	  		 
                     </div>
                     
                     <div id="utf_listing_tags" className="utf_listing_section listing_tags_section">
                     <h3 className="utf_listing_headline_part margin-top-30 margin-bottom-40">Availability</h3>
-                        {the_data.availability == 1 ? <a href="#"><i className="fa fa-tag" aria-hidden="true"></i> Available All Over India</a> : ''}
-                        {the_data.cities.map((data,index) => <a href="#"><i className="fa fa-tag" aria-hidden="true"></i> {data.city}</a>)}		
+                        {the_data.availability == 1 ? <a onClick={() => filterer_city('')}><i className="fa fa-tag" aria-hidden="true"></i> Available All Over India</a> : ''}
+                        {the_data.cities.map((data,index) => <a onClick={() => filterer_city(data.id)}><i className="fa fa-tag" aria-hidden="true"></i> {data.city}</a>)}		
                     </div>
 
                     {the_data.amenities.length > 0 ? <div id="utf_listing_amenities" className="utf_listing_section">
@@ -291,7 +333,8 @@ const Listing_detail = () => {
                             <textarea cols="40" name="description" placeholder="Your Message..." rows="3"></textarea>
                         </div>
                         </fieldset>
-                        <button className="button">Submit Review</button>
+                        <button type="submit" className="button">Submit Review</button>
+                        <button type="reset" id="rstbtn rest"  />
                         <div className="clearfix"></div>
                     </form>
                     </div>
@@ -302,8 +345,16 @@ const Listing_detail = () => {
                 
                 setRightCard(
                     <div className="col-lg-4 col-md-4 margin-top-75 sidebar-search">
-
-                        <Carousel infiniteLoop={true} autoPlay={true} interval={5000} className='wow fadeInUp' data-wow-duration="1s">{the_data.images.map((data,index) => <img src={`${sessionStorage.getItem("urls")}/${data.image}`}  ></img> )}</Carousel>
+                        <div className="image_holder">
+                            <ImageGallery 
+                            lazyLoad={true} 
+                            infinite={true} 
+                            autoPlay={true} 
+                            showNav={false} 
+                            items={the_data.images.map((data) => ({'original' : `${sessionStorage.getItem("urls")}/${data.image}`, 'thumbnail' : `${sessionStorage.getItem("urls")}/${data.image}`}))}
+                            />
+                        </div>
+                        {/* <Carousel infiniteLoop={true} autoPlay={true} interval={5000} className='wow fadeInUp' data-wow-duration="1s">{the_data.images.map((data,index) => <img key={index} onClick={() => console.log("4545445454")} src={`${sessionStorage.getItem("urls")}/${data.image}`}  ></img> )}</Carousel> */}
                 
                     <div className="utf_box_widget opening-hours margin-top-30">
                     <h3><i className="sl sl-icon-envelope-open"></i> Request Message Form</h3>
@@ -320,9 +371,21 @@ const Listing_detail = () => {
                         </div>	
                         <div className="col-md-12">
                             <textarea name="message" cols="40" rows="2" id="comments" placeholder="Your Message" required ></textarea>
+                            <br />
+                            <center>
+                                <div className='captcha_box'>
+                                    <h5 style={{marginTop:'-7px'}}>Captcha</h5>
+                                    <span style={{marginTop:'-15px'}}>
+                                      <span id='left_num'>{Math.ceil(Math.random() * 10)}</span> + <span id='right_num'>{Math.ceil(Math.random() * 10)}</span> = 
+                                    </span>
+                                    <input style={{width:'70px'}} type='number' name='captcha' required />
+                                </div>
+                            </center>
                         </div>
                         </div>            
                         <input type="submit" className="submit button" id="submit" value="Send Message" />
+                        <button type="reset" id="rstbtn_contact rest"  />
+
                     </form>
                     </div>
 
@@ -356,7 +419,7 @@ const Listing_detail = () => {
                     <div className="utf_box_widget margin-top-35">
                     <h3><i className="sl sl-icon-folder-alt"></i> Categories</h3>
                     <ul className="utf_listing_detail_sidebar">
-                        {the_data.categories.map((data,index) => <li><i className="fa fa-angle-double-right"></i> <a href="#">{data.name}</a></li>)}
+                        {the_data.categories.map((data,index) => <li onClick={() => filterer(data.id)}><i className="fa fa-angle-double-right"></i> <a href="#">{data.name}</a></li>)}
                     </ul>
                     </div>
 
@@ -378,9 +441,9 @@ const Listing_detail = () => {
                     </div> :""}
 
                     <div className="utf_box_widget listing-share margin-top-35 margin-bottom-40 no-border">
-                    <h3><i className="sl sl-icon-pin"></i> Bookmark Listing</h3>
-                    <span>{the_data.favorites_count} People Bookmarked Listings</span>
-                    <button onClick={lover} className="like-button"><span className="like-icon"></span> Add to Bookmarks</button>          
+                    <h3><i className="sl sl-icon-pin"></i> Favourite Listing</h3>
+                    <span>{the_data.favorites_count} People liked Listing</span>
+                    <button onClick={lover} className="like-button"><span className={`like-icon ${the_data.is_fav ? 'liked' : ''}`}></span> Add to Favourites</button>          
                     <div className="clearfix"></div>
                     </div>
 
@@ -389,7 +452,7 @@ const Listing_detail = () => {
             })
         }
 
-    },[])
+    },[reloader])
 
 
     return (

@@ -4,6 +4,8 @@ import Footer from "./Footer";
 import Multiselect from "multiselect-react-dropdown";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
+import Cookies from 'js-cookie'
+
 
 const All_listings = () => {
 
@@ -37,7 +39,7 @@ const All_listings = () => {
         
         if(nav_data != null){
             console.log('nav_data :>> ', nav_data);
-            axios.post(`${sessionStorage.getItem("urls")}/qikdial/newFilter/`,nav_data).then((response) => {
+            axios.post(`${sessionStorage.getItem("urls")}/qikdial/newFilter/`,nav_data, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }}).then((response) => {
                 setListings(response.data.data)
             }).catch((err) => {
                 console.log(err)
@@ -118,7 +120,7 @@ const All_listings = () => {
                 "text" : '',
                 "sort_order" : '0'
             }
-            const response = await axios.post(`${sessionStorage.getItem("urls")}/qikdial/newFilter/`,formData)//.then((response) => {
+            const response = await axios.post(`${sessionStorage.getItem("urls")}/qikdial/newFilter/`,formData, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }})//.then((response) => {
             //     setListings([])
             //     setPaginatedListings([])
             //     setListings(response.data.data)
@@ -150,7 +152,7 @@ const All_listings = () => {
                 "mos" : e.target.mos.value,
                 "text" : e.target.search.value
             }
-            const response = await axios.post(`${sessionStorage.getItem("urls")}/qikdial/newFilter/`,formData)//.then((response) => {
+            const response = await axios.post(`${sessionStorage.getItem("urls")}/qikdial/newFilter/`,formData, {headers : {"X-CSRFToken" : Cookies.get("csrftoken") }})//.then((response) => {
             //     setListings([])
             //     setPaginatedListings([])
             //     setListings(response.data.data)
@@ -307,7 +309,7 @@ const All_listings = () => {
                     <div style={{zIndex:"0"}} class="utf_box_widget margin-top-35 margin-bottom-75">
                         <h3><i class="sl sl-icon-folder-alt"></i> Categories</h3>
                         <ul class="utf_listing_detail_sidebar">
-                            {categories.map((data,index) => <li onClick={(e) => filterer(e,"cat",data.id)} key={index}><i class="fa fa-angle-double-right"></i> <a >{data.name}</a></li>)}
+                            {categories.map((data,index) => <li className="sidebar_cats" onClick={(e) => filterer(e,"cat",data.id)} key={index}><i class="fa fa-angle-double-right"></i> <a >{data.name}</a></li>)}
                         </ul>
                     </div>
                     </div>
